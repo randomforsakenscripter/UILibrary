@@ -1,4 +1,4 @@
--- Modern Roblox UI Framework (Loadable Module)
+-- Modern Roblox UI Framework (Fixed Text Scaling & Loadstring Support)
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -9,13 +9,19 @@ if CoreGui:FindFirstChild("GhostGui") then
     CoreGui:FindFirstChild("GhostGui"):Destroy()
 end
 
--- Helper function for Text Scaling
+-- Safe Helper function for Text Scaling
 local function ApplyTextScaling(textObject, minSize, maxSize)
+    -- Enforce valid numbers to prevent "MinFontSize is nil" errors
+    local minVal = math.floor(tonumber(minSize) or 8)
+    local maxVal = math.floor(tonumber(maxSize) or 14)
+
     textObject.TextScaled = true
+
     local constraint = Instance.new("UITextSizeConstraint")
-    constraint.MinFontSize = minSize or 8
-    constraint.MaxFontSize = maxSize or 14
+    constraint.MinFontSize = minVal
+    constraint.MaxFontSize = maxVal
     constraint.Parent = textObject
+
     return constraint
 end
 
@@ -1023,5 +1029,4 @@ function Library:SendNotification(options)
     return Element
 end
 
--- CRITICAL: MUST RETURN LIBRARY
 return Library
