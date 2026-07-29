@@ -1,5 +1,3 @@
---maded by gemini
-
 -- Modern Roblox UI Framework (Full Version with Dynamic Edit/Delete Methods)
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
@@ -57,7 +55,7 @@ TitleLabel.Name = "Title"
 TitleLabel.Size = UDim2.new(1, -120, 1, 0)
 TitleLabel.Position = UDim2.new(0, 12, 0, 0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "Ghost UI"
+TitleLabel.Text = namelol
 TitleLabel.Font = Enum.Font.GothamBold
 TitleLabel.TextSize = 14
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
