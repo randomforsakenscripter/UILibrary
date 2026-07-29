@@ -1,21 +1,31 @@
--- Modern Roblox UI Framework (Full Version with Dynamic Edit/Delete Methods)
+-- Modern Roblox UI Framework (Loadable Module)
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local CoreGui = game:GetService("CoreGui")
 
 -- Cleanup Existing Instances
-if CoreGui:FindFirstChild("GeminiUILibrary") then
-    CoreGui:FindFirstChild("GeminiUILibrary"):Destroy()
+if CoreGui:FindFirstChild("GhostGui") then
+    CoreGui:FindFirstChild("GhostGui"):Destroy()
+end
+
+-- Helper function for Text Scaling
+local function ApplyTextScaling(textObject, minSize, maxSize)
+    textObject.TextScaled = true
+    local constraint = Instance.new("UITextSizeConstraint")
+    constraint.MinFontSize = minSize or 8
+    constraint.MaxFontSize = maxSize or 14
+    constraint.Parent = textObject
+    return constraint
 end
 
 -- ScreenGui Setup
 local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "GeminiUILibrary"
+ScreenGui.Name = "GhostGui"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Parent = CoreGui
 
--- Notification Container (Top Center Stack)
+-- Notification Container
 local NotificationHolder = Instance.new("Frame")
 NotificationHolder.Name = "NotificationHolder"
 NotificationHolder.Size = UDim2.new(0, 260, 1, 0)
@@ -32,8 +42,8 @@ NotifLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
 -- Main Container Frame
 local MainFrame = Instance.new("Frame")
 MainFrame.Name = "MainFrame"
-MainFrame.Size = UDim2.new(0, 220, 0, 40)
-MainFrame.Position = UDim2.new(0.5, -110, 0.3, 0)
+MainFrame.Size = UDim2.new(0, 240, 0, 40)
+MainFrame.Position = UDim2.new(0.5, -120, 0.3, 0)
 MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 24)
 MainFrame.BorderSizePixel = 0
 MainFrame.Active = true
@@ -55,12 +65,12 @@ TitleLabel.Name = "Title"
 TitleLabel.Size = UDim2.new(1, -120, 1, 0)
 TitleLabel.Position = UDim2.new(0, 12, 0, 0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = namelol
+TitleLabel.Text = "Ghost UI"
 TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.TextSize = 14
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = MainFrame
+ApplyTextScaling(TitleLabel, 10, 14)
 
 -- Collapse/Expand Content Button
 local ToggleBtn = Instance.new("TextButton")
@@ -70,9 +80,9 @@ ToggleBtn.Position = UDim2.new(1, -35, 0, 5)
 ToggleBtn.BackgroundTransparency = 1
 ToggleBtn.Text = "v"
 ToggleBtn.Font = Enum.Font.GothamBold
-ToggleBtn.TextSize = 14
 ToggleBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 ToggleBtn.Parent = MainFrame
+ApplyTextScaling(ToggleBtn, 10, 14)
 
 -- Credit Buttons Tracking
 local creditButtons = {}
@@ -124,7 +134,7 @@ local function UpdateContainerSize()
 end
 UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateContainerSize)
 
--- Toggle Collapse Menu Animation
+-- Toggle Menu Animation
 local isExpanded = false
 ToggleBtn.MouseButton1Click:Connect(function()
     isExpanded = not isExpanded
@@ -144,9 +154,7 @@ ToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
-----------------------------------------------------
--- DRAGGABLE FLOATING BUTTON & BLACK HOLE EFFECT
-----------------------------------------------------
+-- Draggable Toggle Button & Effect
 local OpenCloseBtn = Instance.new("ImageButton")
 OpenCloseBtn.Name = "OpenCloseToggleButton"
 OpenCloseBtn.Size = UDim2.new(0, 48, 0, 48)
@@ -173,11 +181,10 @@ OpenCloseText.Size = UDim2.new(1, 0, 1, 0)
 OpenCloseText.BackgroundTransparency = 1
 OpenCloseText.Text = "UI"
 OpenCloseText.Font = Enum.Font.GothamBold
-OpenCloseText.TextSize = 14
 OpenCloseText.TextColor3 = Color3.fromRGB(0, 170, 255)
 OpenCloseText.Parent = OpenCloseBtn
+ApplyTextScaling(OpenCloseText, 10, 14)
 
--- Black Hole Effect Visual
 local function TriggerBlackHoleEffect(pos)
     local BH = Instance.new("Frame")
     BH.Name = "BlackHoleEffect"
@@ -199,24 +206,13 @@ local function TriggerBlackHoleEffect(pos)
     BHStroke.Transparency = 0
     BHStroke.Parent = BH
 
-    local expand = TweenService:Create(BH, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        Size = UDim2.new(0, 75, 0, 75)
-    })
-    local contract = TweenService:Create(BH, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-        Size = UDim2.new(0, 0, 0, 0)
-    })
-    local strokeFade = TweenService:Create(BHStroke, TweenInfo.new(0.25), {
-        Transparency = 1
-    })
+    local expand = TweenService:Create(BH, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Size = UDim2.new(0, 75, 0, 75) })
+    local contract = TweenService:Create(BH, TweenInfo.new(0.25, Enum.EasingStyle.Quart, Enum.EasingDirection.In), { Size = UDim2.new(0, 0, 0, 0) })
+    local strokeFade = TweenService:Create(BHStroke, TweenInfo.new(0.25), { Transparency = 1 })
 
     expand:Play()
-    expand.Completed:Connect(function()
-        contract:Play()
-        strokeFade:Play()
-    end)
-    contract.Completed:Connect(function()
-        BH:Destroy()
-    end)
+    expand.Completed:Connect(function() contract:Play() strokeFade:Play() end)
+    contract.Completed:Connect(function() BH:Destroy() end)
 end
 
 local guiVisible = true
@@ -224,9 +220,7 @@ local isAnimating = false
 local originalPos = MainFrame.Position
 
 MainFrame:GetPropertyChangedSignal("Position"):Connect(function()
-    if guiVisible and not isAnimating then
-        originalPos = MainFrame.Position
-    end
+    if guiVisible and not isAnimating then originalPos = MainFrame.Position end
 end)
 
 local function SetGuiVisibility(visible)
@@ -242,18 +236,11 @@ local function SetGuiVisibility(visible)
 
     if not guiVisible then
         originalPos = MainFrame.Position
-        
-        local shrinkTween = TweenService:Create(MainScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
-            Scale = 0
-        })
-        local moveTween = TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-            Position = targetBtnPos,
-            Rotation = 90
-        })
+        local shrinkTween = TweenService:Create(MainScale, TweenInfo.new(0.35, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Scale = 0 })
+        local moveTween = TweenService:Create(MainFrame, TweenInfo.new(0.35, Enum.EasingStyle.Quad, Enum.EasingDirection.In), { Position = targetBtnPos, Rotation = 90 })
 
         shrinkTween:Play()
         moveTween:Play()
-
         moveTween.Completed:Connect(function()
             MainFrame.Visible = false
             MainFrame.Rotation = 0
@@ -265,20 +252,12 @@ local function SetGuiVisibility(visible)
         MainScale.Scale = 0
         MainFrame.Visible = true
 
-        local growTween = TweenService:Create(MainScale, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {
-            Scale = 1
-        })
-        local moveTween = TweenService:Create(MainFrame, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-            Position = originalPos,
-            Rotation = 0
-        })
+        local growTween = TweenService:Create(MainScale, TweenInfo.new(0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out), { Scale = 1 })
+        local moveTween = TweenService:Create(MainFrame, TweenInfo.new(0.45, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { Position = originalPos, Rotation = 0 })
 
         growTween:Play()
         moveTween:Play()
-
-        growTween.Completed:Connect(function()
-            isAnimating = false
-        end)
+        growTween.Completed:Connect(function() isAnimating = false end)
     end
 end
 
@@ -287,8 +266,15 @@ OpenCloseBtn.MouseButton1Click:Connect(function()
 end)
 
 ----------------------------------------------------
--- UI BUILDER MODULE INTERFACE
+-- UI BUILDER MODULE TABLE
 ----------------------------------------------------
+local Library = {}
+local RegisteredElements = {}
+
+function Library:SetTitle(newTitle)
+    TitleLabel.Text = tostring(newTitle)
+end
+
 function Library:SetToggleButton(options)
     options = options or {}
     local mode = options.Mode or (options.Image and "Image" or "Text")
@@ -306,11 +292,74 @@ function Library:SetToggleButton(options)
     if options.Position then OpenCloseBtn.Position = options.Position end
 end
 
--- 1. AddButton
+-- 1. AddTitleEditor
+function Library:AddTitleEditor(options)
+    options = options or {}
+    options.Name = options.Name or "Menu Title"
+    options.Placeholder = options.Placeholder or "Type new menu name..."
+    
+    local Frame = Instance.new("Frame")
+    Frame.Name = "TitleEditor_" .. options.Name
+    Frame.Size = UDim2.new(1, 0, 0, 34)
+    Frame.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+    Frame.Parent = Container
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 6)
+    Corner.Parent = Frame
+
+    local Label = Instance.new("TextLabel")
+    Label.Name = "Label"
+    Label.Size = UDim2.new(0.45, -10, 1, 0)
+    Label.Position = UDim2.new(0, 10, 0, 0)
+    Label.BackgroundTransparency = 1
+    Label.Text = options.Name
+    Label.Font = Enum.Font.GothamMedium
+    Label.TextColor3 = Color3.fromRGB(240, 240, 240)
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Frame
+    ApplyTextScaling(Label, 8, 12)
+
+    local Input = Instance.new("TextBox")
+    Input.Name = "Input"
+    Input.Size = UDim2.new(0.55, -10, 0, 22)
+    Input.Position = UDim2.new(0.45, 0, 0.5, -11)
+    Input.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+    Input.Text = TitleLabel.Text
+    Input.PlaceholderText = options.Placeholder
+    Input.Font = Enum.Font.Gotham
+    Input.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Input.PlaceholderColor3 = Color3.fromRGB(120, 120, 130)
+    Input.Parent = Frame
+    ApplyTextScaling(Input, 8, 11)
+
+    local InputCorner = Instance.new("UICorner")
+    InputCorner.CornerRadius = UDim.new(0, 4)
+    InputCorner.Parent = Input
+
+    local conn = Input.FocusLost:Connect(function()
+        if Input.Text ~= "" then Library:SetTitle(Input.Text) end
+    end)
+
+    local Element = {Instance = Frame}
+    function Element:Set(newOptions)
+        if newOptions and newOptions.Title then
+            Library:SetTitle(newOptions.Title)
+            Input.Text = newOptions.Title
+        end
+    end
+    function Element:Delete()
+        conn:Disconnect()
+        Frame:Destroy()
+        UpdateContainerSize()
+    end
+    return Element
+end
+
+-- 2. AddButton
 function Library:AddButton(options)
     options = options or {}
     options.Name = options.Name or "Button"
-    options.Description = options.Description or ""
     options.Callback = options.Callback or function() end
 
     local Button = Instance.new("TextButton")
@@ -319,46 +368,35 @@ function Library:AddButton(options)
     Button.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
     Button.Text = options.Name
     Button.Font = Enum.Font.GothamMedium
-    Button.TextSize = 12
     Button.TextColor3 = Color3.fromRGB(240, 240, 240)
     Button.AutoButtonColor = true
     Button.Parent = Container
+    ApplyTextScaling(Button, 8, 12)
 
     local Corner = Instance.new("UICorner")
     Corner.CornerRadius = UDim.new(0, 6)
     Corner.Parent = Button
 
-    local conn = Button.MouseButton1Click:Connect(function()
-        options.Callback()
-    end)
+    local conn = Button.MouseButton1Click:Connect(function() options.Callback() end)
 
     local Element = {Instance = Button}
-    
     function Element:Set(newOptions)
         newOptions = newOptions or {}
-        if newOptions.Name then
-            options.Name = newOptions.Name
-            Button.Text = newOptions.Name
-        end
-        if newOptions.Callback then
-            options.Callback = newOptions.Callback
-        end
+        if newOptions.Name then options.Name = newOptions.Name; Button.Text = newOptions.Name end
+        if newOptions.Callback then options.Callback = newOptions.Callback end
     end
-
     function Element:Delete()
         conn:Disconnect()
         Button:Destroy()
         UpdateContainerSize()
     end
-
     return Element
 end
 
--- 2. AddToggle
+-- 3. AddToggle
 function Library:AddToggle(options)
     options = options or {}
     options.Name = options.Name or "Toggle"
-    options.Description = options.Description or ""
     options.Value = options.Value or options.Default or false
     options.Callback = options.Callback or function() end
 
@@ -379,10 +417,10 @@ function Library:AddToggle(options)
     Label.BackgroundTransparency = 1
     Label.Text = options.Name
     Label.Font = Enum.Font.GothamMedium
-    Label.TextSize = 12
     Label.TextColor3 = Color3.fromRGB(240, 240, 240)
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Parent = Frame
+    ApplyTextScaling(Label, 8, 12)
 
     local ToggleBox = Instance.new("TextButton")
     ToggleBox.Name = "Box"
@@ -398,44 +436,36 @@ function Library:AddToggle(options)
 
     local conn = ToggleBox.MouseButton1Click:Connect(function()
         options.Value = not options.Value
-        TweenService:Create(ToggleBox, TweenInfo.new(0.15), {
-            BackgroundColor3 = options.Value and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(50, 50, 60)
-        }):Play()
+        TweenService:Create(ToggleBox, TweenInfo.new(0.15), { BackgroundColor3 = options.Value and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(50, 50, 60) }):Play()
         options.Callback(options.Value)
     end)
 
-    local Element = {Instance = Frame}
+    local Element = {Instance = Frame, Options = options}
+    RegisteredElements[options.Name] = Element
 
     function Element:Set(newOptions)
         newOptions = newOptions or {}
-        if newOptions.Name then
-            options.Name = newOptions.Name
-            Label.Text = newOptions.Name
-        end
+        if newOptions.Name then options.Name = newOptions.Name; Label.Text = newOptions.Name end
         if newOptions.Value ~= nil then
             options.Value = newOptions.Value
             ToggleBox.BackgroundColor3 = options.Value and Color3.fromRGB(0, 170, 255) or Color3.fromRGB(50, 50, 60)
             options.Callback(options.Value)
         end
-        if newOptions.Callback then
-            options.Callback = newOptions.Callback
-        end
+        if newOptions.Callback then options.Callback = newOptions.Callback end
     end
-
     function Element:Delete()
         conn:Disconnect()
+        RegisteredElements[options.Name] = nil
         Frame:Destroy()
         UpdateContainerSize()
     end
-
     return Element
 end
 
--- 3. AddSlider
+-- 4. AddSlider
 function Library:AddSlider(options)
     options = options or {}
     options.Name = options.Name or "Slider"
-    options.Description = options.Description or ""
     options.Min = options.Min or 0
     options.Max = options.Max or 100
     options.Value = options.Value or options.Default or options.Min
@@ -458,10 +488,10 @@ function Library:AddSlider(options)
     Label.BackgroundTransparency = 1
     Label.Text = options.Name .. ": " .. tostring(options.Value)
     Label.Font = Enum.Font.GothamMedium
-    Label.TextSize = 12
     Label.TextColor3 = Color3.fromRGB(240, 240, 240)
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Parent = SliderFrame
+    ApplyTextScaling(Label, 8, 12)
 
     local Bar = Instance.new("Frame")
     Bar.Name = "Bar"
@@ -490,7 +520,6 @@ function Library:AddSlider(options)
     local function UpdateInput(input)
         local deltaX = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
         options.Value = math.floor(options.Min + (options.Max - options.Min) * deltaX)
-        
         TweenService:Create(Fill, TweenInfo.new(0.08), {Size = UDim2.new(deltaX, 0, 1, 0)}):Play()
         Label.Text = options.Name .. ": " .. tostring(options.Value)
         options.Callback(options.Value)
@@ -502,20 +531,19 @@ function Library:AddSlider(options)
             UpdateInput(input)
         end
     end)
-
     local c2 = UserInputService.InputChanged:Connect(function(input)
         if isSliding and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
             UpdateInput(input)
         end
     end)
-
     local c3 = UserInputService.InputEnded:Connect(function(input)
         if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
             isSliding = false
         end
     end)
 
-    local Element = {Instance = SliderFrame}
+    local Element = {Instance = SliderFrame, Options = options}
+    RegisteredElements[options.Name] = Element
 
     function Element:Set(newOptions)
         newOptions = newOptions or {}
@@ -531,23 +559,19 @@ function Library:AddSlider(options)
         Label.Text = options.Name .. ": " .. tostring(options.Value)
         if newOptions.Callback then options.Callback = newOptions.Callback end
     end
-
     function Element:Delete()
-        c1:Disconnect()
-        c2:Disconnect()
-        c3:Disconnect()
+        c1:Disconnect(); c2:Disconnect(); c3:Disconnect()
+        RegisteredElements[options.Name] = nil
         SliderFrame:Destroy()
         UpdateContainerSize()
     end
-
     return Element
 end
 
--- 4. AddTextbox
+-- 5. AddTextbox
 function Library:AddTextbox(options)
     options = options or {}
     options.Name = options.Name or "TextBox"
-    options.Description = options.Description or ""
     options.Placeholder = options.Placeholder or "Type here..."
     options.Value = options.Value or options.Default or ""
     options.Callback = options.Callback or function() end
@@ -569,10 +593,10 @@ function Library:AddTextbox(options)
     Label.BackgroundTransparency = 1
     Label.Text = options.Name
     Label.Font = Enum.Font.GothamMedium
-    Label.TextSize = 12
     Label.TextColor3 = Color3.fromRGB(240, 240, 240)
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Parent = Frame
+    ApplyTextScaling(Label, 8, 12)
 
     local Input = Instance.new("TextBox")
     Input.Name = "Input"
@@ -582,10 +606,10 @@ function Library:AddTextbox(options)
     Input.Text = options.Value
     Input.PlaceholderText = options.Placeholder
     Input.Font = Enum.Font.Gotham
-    Input.TextSize = 11
     Input.TextColor3 = Color3.fromRGB(255, 255, 255)
     Input.PlaceholderColor3 = Color3.fromRGB(120, 120, 130)
     Input.Parent = Frame
+    ApplyTextScaling(Input, 8, 11)
 
     local InputCorner = Instance.new("UICorner")
     InputCorner.CornerRadius = UDim.new(0, 4)
@@ -596,42 +620,33 @@ function Library:AddTextbox(options)
         options.Callback(options.Value, enterPressed)
     end)
 
-    local Element = {Instance = Frame}
+    local Element = {Instance = Frame, Options = options}
+    RegisteredElements[options.Name] = Element
 
     function Element:Set(newOptions)
         newOptions = newOptions or {}
-        if newOptions.Name then
-            options.Name = newOptions.Name
-            Label.Text = newOptions.Name
-        end
-        if newOptions.Placeholder then
-            options.Placeholder = newOptions.Placeholder
-            Input.PlaceholderText = newOptions.Placeholder
-        end
+        if newOptions.Name then options.Name = newOptions.Name; Label.Text = newOptions.Name end
+        if newOptions.Placeholder then options.Placeholder = newOptions.Placeholder; Input.PlaceholderText = newOptions.Placeholder end
         if newOptions.Value ~= nil then
             options.Value = newOptions.Value
             Input.Text = tostring(newOptions.Value)
             options.Callback(options.Value, false)
         end
-        if newOptions.Callback then
-            options.Callback = newOptions.Callback
-        end
+        if newOptions.Callback then options.Callback = newOptions.Callback end
     end
-
     function Element:Delete()
         conn:Disconnect()
+        RegisteredElements[options.Name] = nil
         Frame:Destroy()
         UpdateContainerSize()
     end
-
     return Element
 end
 
--- 5. AddDropdown
+-- 6. AddDropdown
 function Library:AddDropdown(options)
     options = options or {}
     options.Name = options.Name or "Dropdown"
-    options.Description = options.Description or ""
     options.Options = options.Options or {}
     options.Value = options.Value or options.Default or (options.Options[1] or "")
     options.Callback = options.Callback or function() end
@@ -661,10 +676,10 @@ function Library:AddDropdown(options)
     Label.BackgroundTransparency = 1
     Label.Text = options.Name .. ": " .. tostring(options.Value)
     Label.Font = Enum.Font.GothamMedium
-    Label.TextSize = 12
     Label.TextColor3 = Color3.fromRGB(240, 240, 240)
     Label.TextXAlignment = Enum.TextXAlignment.Left
     Label.Parent = MainButton
+    ApplyTextScaling(Label, 8, 12)
 
     local Arrow = Instance.new("TextLabel")
     Arrow.Name = "Arrow"
@@ -673,9 +688,9 @@ function Library:AddDropdown(options)
     Arrow.BackgroundTransparency = 1
     Arrow.Text = "v"
     Arrow.Font = Enum.Font.GothamBold
-    Arrow.TextSize = 12
     Arrow.TextColor3 = Color3.fromRGB(180, 180, 180)
     Arrow.Parent = MainButton
+    ApplyTextScaling(Arrow, 8, 12)
 
     local OptionContainer = Instance.new("Frame")
     OptionContainer.Name = "OptionsList"
@@ -690,18 +705,13 @@ function Library:AddDropdown(options)
     ListLayout.Parent = OptionContainer
 
     local open = false
-
     local function ToggleDropdown()
         open = not open
         Arrow.Text = open and "^" or "v"
-        
         local optionsHeight = ListLayout.AbsoluteContentSize.Y
         local targetFrameHeight = open and (38 + optionsHeight) or 34
 
-        TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-            Size = UDim2.new(1, 0, 0, targetFrameHeight)
-        }):Play()
-
+        TweenService:Create(DropdownFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.new(1, 0, 0, targetFrameHeight) }):Play()
         task.delay(0.05, UpdateContainerSize)
     end
 
@@ -711,7 +721,6 @@ function Library:AddDropdown(options)
         for _, child in ipairs(OptionContainer:GetChildren()) do
             if child:IsA("TextButton") then child:Destroy() end
         end
-
         for _, opt in ipairs(options.Options) do
             local OptBtn = Instance.new("TextButton")
             OptBtn.Name = "Option_" .. tostring(opt)
@@ -719,9 +728,9 @@ function Library:AddDropdown(options)
             OptBtn.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
             OptBtn.Text = opt
             OptBtn.Font = Enum.Font.Gotham
-            OptBtn.TextSize = 11
             OptBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
             OptBtn.Parent = OptionContainer
+            ApplyTextScaling(OptBtn, 8, 11)
 
             local OptCorner = Instance.new("UICorner")
             OptCorner.CornerRadius = UDim.new(0, 4)
@@ -735,36 +744,29 @@ function Library:AddDropdown(options)
             end)
         end
     end
-
     BuildOptions()
 
-    local Element = {Instance = DropdownFrame}
+    local Element = {Instance = DropdownFrame, Options = options}
+    RegisteredElements[options.Name] = Element
 
     function Element:Set(newOptions)
         newOptions = newOptions or {}
         if newOptions.Name then options.Name = newOptions.Name end
-        if newOptions.Options then
-            options.Options = newOptions.Options
-            BuildOptions()
-        end
-        if newOptions.Value then
-            options.Value = newOptions.Value
-            options.Callback(options.Value)
-        end
+        if newOptions.Options then options.Options = newOptions.Options; BuildOptions() end
+        if newOptions.Value then options.Value = newOptions.Value; options.Callback(options.Value) end
         Label.Text = options.Name .. ": " .. tostring(options.Value)
         if newOptions.Callback then options.Callback = newOptions.Callback end
     end
-
     function Element:Delete()
         conn:Disconnect()
+        RegisteredElements[options.Name] = nil
         DropdownFrame:Destroy()
         UpdateContainerSize()
     end
-
     return Element
 end
 
--- 6. AddLabelBox
+-- 7. AddLabelBox
 function Library:AddLabelBox(options)
     options = options or {}
     options.Name = options.Name or "Information"
@@ -787,10 +789,10 @@ function Library:AddLabelBox(options)
     TitleText.BackgroundTransparency = 1
     TitleText.Text = options.Name
     TitleText.Font = Enum.Font.GothamBold
-    TitleText.TextSize = 12
     TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
     TitleText.TextXAlignment = Enum.TextXAlignment.Left
     TitleText.Parent = Frame
+    ApplyTextScaling(TitleText, 8, 12)
 
     local DescText = Instance.new("TextLabel")
     DescText.Name = "Description"
@@ -799,41 +801,114 @@ function Library:AddLabelBox(options)
     DescText.BackgroundTransparency = 1
     DescText.Text = options.Description
     DescText.Font = Enum.Font.Gotham
-    DescText.TextSize = 10
     DescText.TextColor3 = Color3.fromRGB(160, 160, 170)
     DescText.TextXAlignment = Enum.TextXAlignment.Left
     DescText.TextWrapped = true
     DescText.Parent = Frame
+    ApplyTextScaling(DescText, 8, 10)
 
     local Element = {Instance = Frame}
-
     function Element:Set(newOptions)
         newOptions = newOptions or {}
-        if newOptions.Name then
-            options.Name = newOptions.Name
-            TitleText.Text = newOptions.Name
-        end
-        if newOptions.Description then
-            options.Description = newOptions.Description
-            DescText.Text = newOptions.Description
-        end
+        if newOptions.Name then options.Name = newOptions.Name; TitleText.Text = newOptions.Name end
+        if newOptions.Description then options.Description = newOptions.Description; DescText.Text = newOptions.Description end
     end
-
     function Element:Delete()
         Frame:Destroy()
         UpdateContainerSize()
     end
-
     return Element
 end
 
--- 7. AddCreditButton
-function Library:AddCreditButton(options)
-    if #creditButtons >= MAX_CREDIT_BUTTONS then
-        warn("Maximum credit button count reached!")
-        return nil
-    end
+-- 8. AddConfig
+function Library:AddConfig(options)
+    options = options or {}
+    options.Name = options.Name or "Configuration"
 
+    local Frame = Instance.new("Frame")
+    Frame.Name = "Config_" .. options.Name
+    Frame.Size = UDim2.new(1, 0, 0, 70)
+    Frame.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
+    Frame.Parent = Container
+
+    local Corner = Instance.new("UICorner")
+    Corner.CornerRadius = UDim.new(0, 6)
+    Corner.Parent = Frame
+
+    local Label = Instance.new("TextLabel")
+    Label.Name = "Label"
+    Label.Size = UDim2.new(1, -20, 0, 20)
+    Label.Position = UDim2.new(0, 10, 0, 6)
+    Label.BackgroundTransparency = 1
+    Label.Text = options.Name
+    Label.Font = Enum.Font.GothamBold
+    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Label.TextXAlignment = Enum.TextXAlignment.Left
+    Label.Parent = Frame
+    ApplyTextScaling(Label, 8, 12)
+
+    local SaveBtn = Instance.new("TextButton")
+    SaveBtn.Name = "Save"
+    SaveBtn.Size = UDim2.new(0, 85, 0, 26)
+    SaveBtn.Position = UDim2.new(0, 10, 0, 32)
+    SaveBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+    SaveBtn.Text = "Save Config"
+    SaveBtn.Font = Enum.Font.GothamBold
+    SaveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SaveBtn.Parent = Frame
+    ApplyTextScaling(SaveBtn, 8, 11)
+
+    local SaveCorner = Instance.new("UICorner")
+    SaveCorner.CornerRadius = UDim.new(0, 4)
+    SaveCorner.Parent = SaveBtn
+
+    local LoadBtn = Instance.new("TextButton")
+    LoadBtn.Name = "Load"
+    LoadBtn.Size = UDim2.new(0, 85, 0, 26)
+    LoadBtn.Position = UDim2.new(1, -95, 0, 32)
+    LoadBtn.BackgroundColor3 = Color3.fromRGB(45, 180, 80)
+    LoadBtn.Text = "Load Config"
+    LoadBtn.Font = Enum.Font.GothamBold
+    LoadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    LoadBtn.Parent = Frame
+    ApplyTextScaling(LoadBtn, 8, 11)
+
+    local LoadCorner = Instance.new("UICorner")
+    LoadCorner.CornerRadius = UDim.new(0, 4)
+    LoadCorner.Parent = LoadBtn
+
+    local savedData = {}
+
+    local cSave = SaveBtn.MouseButton1Click:Connect(function()
+        savedData = { Title = TitleLabel.Text }
+        for name, elem in pairs(RegisteredElements) do
+            if elem.Options and elem.Options.Value ~= nil then
+                savedData[name] = elem.Options.Value
+            end
+        end
+        Library:SendNotification({ Title = "Config Saved", Message = "Saved configuration settings!", Duration = 3 })
+    end)
+
+    local cLoad = LoadBtn.MouseButton1Click:Connect(function()
+        if savedData.Title then Library:SetTitle(savedData.Title) end
+        for name, val in pairs(savedData) do
+            if RegisteredElements[name] then RegisteredElements[name]:Set({Value = val}) end
+        end
+        Library:SendNotification({ Title = "Config Loaded", Message = "Loaded saved settings!", Duration = 3 })
+    end)
+
+    local Element = {Instance = Frame}
+    function Element:Delete()
+        cSave:Disconnect(); cLoad:Disconnect()
+        Frame:Destroy()
+        UpdateContainerSize()
+    end
+    return Element
+end
+
+-- 9. AddCreditButton
+function Library:AddCreditButton(options)
+    if #creditButtons >= MAX_CREDIT_BUTTONS then return nil end
     options = options or {}
     options.Image = options.Image or options.Value or ""
     options.Callback = options.Callback or function() end
@@ -846,7 +921,6 @@ function Library:AddCreditButton(options)
     CreditBtn.Size = UDim2.new(0, 24, 0, 24)
     CreditBtn.Position = UDim2.new(1, -35 - (count * 28), 0, 8)
     CreditBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-    CreditBtn.BackgroundTransparency = 0
     CreditBtn.Image = typeof(options.Image) == "number" and ("rbxassetid://" .. tostring(options.Image)) or options.Image
     CreditBtn.ScaleType = Enum.ScaleType.Fit
     CreditBtn.Parent = MainFrame
@@ -855,55 +929,35 @@ function Library:AddCreditButton(options)
     Corner.CornerRadius = UDim.new(0, 6)
     Corner.Parent = CreditBtn
 
-    local conn = CreditBtn.MouseButton1Click:Connect(function()
-        options.Callback()
-    end)
-
+    local conn = CreditBtn.MouseButton1Click:Connect(function() options.Callback() end)
     table.insert(creditButtons, CreditBtn)
-    
-    local Element = {Instance = CreditBtn}
 
+    local Element = {Instance = CreditBtn}
     function Element:Set(newOptions)
         newOptions = newOptions or {}
-        if newOptions.Image then
-            options.Image = newOptions.Image
-            CreditBtn.Image = typeof(options.Image) == "number" and ("rbxassetid://" .. tostring(options.Image)) or options.Image
-        end
-        if newOptions.Callback then
-            options.Callback = newOptions.Callback
-        end
+        if newOptions.Image then options.Image = newOptions.Image; CreditBtn.Image = typeof(options.Image) == "number" and ("rbxassetid://" .. tostring(options.Image)) or options.Image end
+        if newOptions.Callback then options.Callback = newOptions.Callback end
     end
-
     function Element:Delete()
         conn:Disconnect()
         local idx = table.find(creditButtons, CreditBtn)
         if idx then table.remove(creditButtons, idx) end
         CreditBtn:Destroy()
-        
-        -- Refactor remaining top positions
-        for i, btn in ipairs(creditButtons) do
-            btn.Position = UDim2.new(1, -35 - (i * 28), 0, 8)
-        end
+        for i, btn in ipairs(creditButtons) do btn.Position = UDim2.new(1, -35 - (i * 28), 0, 8) end
     end
-
     return Element
 end
 
--- 8. SendNotification
+-- 10. SendNotification
 function Library:SendNotification(options)
     options = options or {}
     options.Title = options.Title or options.Name or "Notification"
     options.Message = options.Message or options.Description or ""
     options.Duration = options.Duration or 5
-    options.Buttons = options.Buttons or {}
-
-    local btnCount = math.min(#options.Buttons, 3)
-    local hasButtons = btnCount > 0
-    local frameHeight = hasButtons and 76 or 52
 
     local NotifFrame = Instance.new("Frame")
     NotifFrame.Name = "Notification_" .. options.Title
-    NotifFrame.Size = UDim2.new(1, 0, 0, frameHeight)
+    NotifFrame.Size = UDim2.new(1, 0, 0, 52)
     NotifFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 35)
     NotifFrame.BackgroundTransparency = 1
     NotifFrame.Parent = NotificationHolder
@@ -925,11 +979,11 @@ function Library:SendNotification(options)
     TitleLabel.BackgroundTransparency = 1
     TitleLabel.Text = options.Title
     TitleLabel.Font = Enum.Font.GothamBold
-    TitleLabel.TextSize = 12
     TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
     TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
     TitleLabel.TextTransparency = 1
     TitleLabel.Parent = NotifFrame
+    ApplyTextScaling(TitleLabel, 8, 12)
 
     local MsgLabel = Instance.new("TextLabel")
     MsgLabel.Name = "Message"
@@ -938,65 +992,17 @@ function Library:SendNotification(options)
     MsgLabel.BackgroundTransparency = 1
     MsgLabel.Text = options.Message
     MsgLabel.Font = Enum.Font.Gotham
-    MsgLabel.TextSize = 11
     MsgLabel.TextColor3 = Color3.fromRGB(180, 180, 190)
     MsgLabel.TextXAlignment = Enum.TextXAlignment.Left
     MsgLabel.TextWrapped = true
     MsgLabel.TextTransparency = 1
     MsgLabel.Parent = NotifFrame
+    ApplyTextScaling(MsgLabel, 8, 10)
 
     TweenService:Create(NotifFrame, TweenInfo.new(0.25), {BackgroundTransparency = 0}):Play()
     TweenService:Create(Stroke, TweenInfo.new(0.25), {Transparency = 0.6}):Play()
     TweenService:Create(TitleLabel, TweenInfo.new(0.25), {TextTransparency = 0}):Play()
     TweenService:Create(MsgLabel, TweenInfo.new(0.25), {TextTransparency = 0}):Play()
-
-    if hasButtons then
-        local ButtonContainer = Instance.new("Frame")
-        ButtonContainer.Name = "ButtonContainer"
-        ButtonContainer.Size = UDim2.new(1, -20, 0, 22)
-        ButtonContainer.Position = UDim2.new(0, 10, 0, 46)
-        ButtonContainer.BackgroundTransparency = 1
-        ButtonContainer.Parent = NotifFrame
-
-        local ButtonLayout = Instance.new("UIListLayout")
-        ButtonLayout.Parent = ButtonContainer
-        ButtonLayout.FillDirection = Enum.FillDirection.Horizontal
-        ButtonLayout.SortOrder = Enum.SortOrder.LayoutOrder
-        ButtonLayout.Padding = UDim.new(0, 6)
-
-        local btnWidth = (1 / btnCount) - (0.02 * (btnCount - 1))
-
-        for i = 1, btnCount do
-            local btnData = options.Buttons[i]
-            local ActionBtn = Instance.new("TextButton")
-            ActionBtn.Name = "Button_" .. tostring(i)
-            ActionBtn.Size = UDim2.new(btnWidth, 0, 1, 0)
-            ActionBtn.BackgroundColor3 = btnData.Color or Color3.fromRGB(0, 170, 255)
-            ActionBtn.Text = btnData.Text or ("Button " .. tostring(i))
-            ActionBtn.Font = Enum.Font.GothamBold
-            ActionBtn.TextSize = 10
-            ActionBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-            ActionBtn.BackgroundTransparency = 1
-            ActionBtn.TextTransparency = 1
-            ActionBtn.Parent = ButtonContainer
-
-            local BtnCorner = Instance.new("UICorner")
-            BtnCorner.CornerRadius = UDim.new(0, 4)
-            BtnCorner.Parent = ActionBtn
-
-            TweenService:Create(ActionBtn, TweenInfo.new(0.25), {
-                BackgroundTransparency = 0,
-                TextTransparency = 0
-            }):Play()
-
-            ActionBtn.MouseButton1Click:Connect(function()
-                if btnData.Callback then
-                    btnData.Callback()
-                end
-                NotifFrame:Destroy()
-            end)
-        end
-    end
 
     local dismissThread = task.delay(options.Duration, function()
         if NotifFrame and NotifFrame.Parent then
@@ -1010,23 +1016,12 @@ function Library:SendNotification(options)
     end)
 
     local Element = {Instance = NotifFrame}
-
-    function Element:Set(newOptions)
-        newOptions = newOptions or {}
-        if newOptions.Title then
-            options.Title = newOptions.Title
-            TitleLabel.Text = newOptions.Title
-        end
-        if newOptions.Message then
-            options.Message = newOptions.Message
-            MsgLabel.Text = newOptions.Message
-        end
-    end
-
     function Element:Delete()
         if dismissThread then task.cancel(dismissThread) end
         if NotifFrame then NotifFrame:Destroy() end
     end
-
     return Element
 end
+
+-- CRITICAL: MUST RETURN LIBRARY
+return Library
