@@ -1,28 +1,27 @@
--- Modern Roblox UI Framework (Fixed Text Scaling & Loadstring Support)
+-- Modern Roblox UI Framework (Safe UI Constraints + File Config Support)
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
+local HttpService = game:GetService("HttpService")
 local CoreGui = game:GetService("CoreGui")
+
+-- Folder name inside executor workspace folder
+local CONFIG_FOLDER = "GhostUI_Configs"
 
 -- Cleanup Existing Instances
 if CoreGui:FindFirstChild("GhostGui") then
     CoreGui:FindFirstChild("GhostGui"):Destroy()
 end
 
--- Safe Helper function for Text Scaling
+-- Safe Text Scaling Function (Prevents nil/executor constraint errors)
 local function ApplyTextScaling(textObject, minSize, maxSize)
-    -- Enforce valid numbers to prevent "MinFontSize is nil" errors
-    local minVal = math.floor(tonumber(minSize) or 8)
-    local maxVal = math.floor(tonumber(maxSize) or 14)
-
     textObject.TextScaled = true
-
-    local constraint = Instance.new("UITextSizeConstraint")
-    constraint.MinFontSize = minVal
-    constraint.MaxFontSize = maxVal
-    constraint.Parent = textObject
-
-    return constraint
+    pcall(function()
+        local constraint = Instance.new("UITextSizeConstraint")
+        constraint.MinFontSize = math.floor(tonumber(minSize) or 8)
+        constraint.MaxFontSize = math.floor(tonumber(maxSize) or 14)
+        constraint.Parent = textObject
+    end)
 end
 
 -- ScreenGui Setup
@@ -90,11 +89,8 @@ ToggleBtn.TextColor3 = Color3.fromRGB(180, 180, 180)
 ToggleBtn.Parent = MainFrame
 ApplyTextScaling(ToggleBtn, 10, 14)
 
--- Credit Buttons Tracking
 local creditButtons = {}
 local MAX_CREDIT_BUTTONS = 4
-
--- Scrolling Container
 local MAX_CONTAINER_HEIGHT = 280
 
 local Container = Instance.new("ScrollingFrame")
@@ -126,7 +122,6 @@ UIPadding.PaddingBottom = UDim.new(0, 6)
 UIPadding.PaddingLeft = UDim.new(0, 8)
 UIPadding.PaddingRight = UDim.new(0, 10)
 
--- Auto Resizing Container Height
 local function UpdateContainerSize()
     local contentHeight = UIListLayout.AbsoluteContentSize.Y + 12
     Container.CanvasSize = UDim2.new(0, 0, 0, contentHeight)
@@ -140,7 +135,6 @@ local function UpdateContainerSize()
 end
 UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(UpdateContainerSize)
 
--- Toggle Menu Animation
 local isExpanded = false
 ToggleBtn.MouseButton1Click:Connect(function()
     isExpanded = not isExpanded
@@ -160,7 +154,6 @@ ToggleBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- Draggable Toggle Button & Effect
 local OpenCloseBtn = Instance.new("ImageButton")
 OpenCloseBtn.Name = "OpenCloseToggleButton"
 OpenCloseBtn.Size = UDim2.new(0, 48, 0, 48)
@@ -296,6 +289,71 @@ function Library:SetToggleButton(options)
 
     if options.Size then OpenCloseBtn.Size = options.Size end
     if options.Position then OpenCloseBtn.Position = options.Position end
+end
+
+-- FILE CONFIGURATION SYSTEM
+local function EnsureConfigFolder()
+    if isfolder and makefolder then
+        if not isfolder(CONFIG_FOLDER) then
+            makefolder(CONFIG_FOLDER)
+        end
+    end
+end
+
+function Library:SaveConfig(fileName)
+    if not fileName or fileName == "" then fileName = "default" end
+    if not string.find(fileName, "%.json$") then fileName = fileName .. ".json" end
+
+    EnsureConfigFolder()
+    local path = CONFIG_FOLDER .. "/" .. fileName
+
+    local saveData = {
+        Title = TitleLabel.Text,
+        Elements = {}
+    }
+
+    for name, elem in pairs(RegisteredElements) do
+        if elem.Options and elem.Options.Value ~= nil then
+            saveData.Elements[name] = elem.Options.Value
+        end
+    end
+
+    local jsonString = HttpService:JSONEncode(saveData)
+
+    if writefile then
+        writefile(path, jsonString)
+        Library:SendNotification({ Title = "Config Saved", Message = "Saved to file: " .. fileName, Duration = 3 })
+    else
+        warn("Executor does not support writefile function.")
+    end
+end
+
+function Library:LoadConfig(fileName)
+    if not fileName or fileName == "" then fileName = "default" end
+    if not string.find(fileName, "%.json$") then fileName = fileName .. ".json" end
+
+    local path = CONFIG_FOLDER .. "/" .. fileName
+
+    if isfile and readfile and isfile(path) then
+        local rawData = readfile(path)
+        local success, decoded = pcall(function() return HttpService:JSONDecode(rawData) end)
+
+        if success and decoded then
+            if decoded.Title then Library:SetTitle(decoded.Title) end
+            if decoded.Elements then
+                for name, val in pairs(decoded.Elements) do
+                    if RegisteredElements[name] then
+                        RegisteredElements[name]:Set({Value = val})
+                    end
+                end
+            end
+            Library:SendNotification({ Title = "Config Loaded", Message = "Loaded file: " .. fileName, Duration = 3 })
+        else
+            Library:SendNotification({ Title = "Config Error", Message = "Failed to parse JSON configuration.", Duration = 3 })
+        end
+    else
+        Library:SendNotification({ Title = "Config Missing", Message = "File does not exist: " .. fileName, Duration = 3 })
+    end
 end
 
 -- 1. AddTitleEditor
@@ -772,64 +830,11 @@ function Library:AddDropdown(options)
     return Element
 end
 
--- 7. AddLabelBox
-function Library:AddLabelBox(options)
-    options = options or {}
-    options.Name = options.Name or "Information"
-    options.Description = options.Description or ""
-
-    local Frame = Instance.new("Frame")
-    Frame.Name = "LabelBox_" .. options.Name
-    Frame.Size = UDim2.new(1, 0, 0, 50)
-    Frame.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-    Frame.Parent = Container
-
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 6)
-    Corner.Parent = Frame
-
-    local TitleText = Instance.new("TextLabel")
-    TitleText.Name = "Title"
-    TitleText.Size = UDim2.new(1, -20, 0, 18)
-    TitleText.Position = UDim2.new(0, 10, 0, 6)
-    TitleText.BackgroundTransparency = 1
-    TitleText.Text = options.Name
-    TitleText.Font = Enum.Font.GothamBold
-    TitleText.TextColor3 = Color3.fromRGB(255, 255, 255)
-    TitleText.TextXAlignment = Enum.TextXAlignment.Left
-    TitleText.Parent = Frame
-    ApplyTextScaling(TitleText, 8, 12)
-
-    local DescText = Instance.new("TextLabel")
-    DescText.Name = "Description"
-    DescText.Size = UDim2.new(1, -20, 0, 22)
-    DescText.Position = UDim2.new(0, 10, 0, 24)
-    DescText.BackgroundTransparency = 1
-    DescText.Text = options.Description
-    DescText.Font = Enum.Font.Gotham
-    DescText.TextColor3 = Color3.fromRGB(160, 160, 170)
-    DescText.TextXAlignment = Enum.TextXAlignment.Left
-    DescText.TextWrapped = true
-    DescText.Parent = Frame
-    ApplyTextScaling(DescText, 8, 10)
-
-    local Element = {Instance = Frame}
-    function Element:Set(newOptions)
-        newOptions = newOptions or {}
-        if newOptions.Name then options.Name = newOptions.Name; TitleText.Text = newOptions.Name end
-        if newOptions.Description then options.Description = newOptions.Description; DescText.Text = newOptions.Description end
-    end
-    function Element:Delete()
-        Frame:Destroy()
-        UpdateContainerSize()
-    end
-    return Element
-end
-
--- 8. AddConfig
+-- 7. AddConfig UI Element (Saves/Loads to customizable filename)
 function Library:AddConfig(options)
     options = options or {}
     options.Name = options.Name or "Configuration"
+    options.FileName = options.FileName or "config"
 
     local Frame = Instance.new("Frame")
     Frame.Name = "Config_" .. options.Name
@@ -858,7 +863,7 @@ function Library:AddConfig(options)
     SaveBtn.Size = UDim2.new(0, 85, 0, 26)
     SaveBtn.Position = UDim2.new(0, 10, 0, 32)
     SaveBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
-    SaveBtn.Text = "Save Config"
+    SaveBtn.Text = "Save File"
     SaveBtn.Font = Enum.Font.GothamBold
     SaveBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     SaveBtn.Parent = Frame
@@ -873,7 +878,7 @@ function Library:AddConfig(options)
     LoadBtn.Size = UDim2.new(0, 85, 0, 26)
     LoadBtn.Position = UDim2.new(1, -95, 0, 32)
     LoadBtn.BackgroundColor3 = Color3.fromRGB(45, 180, 80)
-    LoadBtn.Text = "Load Config"
+    LoadBtn.Text = "Load File"
     LoadBtn.Font = Enum.Font.GothamBold
     LoadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
     LoadBtn.Parent = Frame
@@ -883,24 +888,12 @@ function Library:AddConfig(options)
     LoadCorner.CornerRadius = UDim.new(0, 4)
     LoadCorner.Parent = LoadBtn
 
-    local savedData = {}
-
     local cSave = SaveBtn.MouseButton1Click:Connect(function()
-        savedData = { Title = TitleLabel.Text }
-        for name, elem in pairs(RegisteredElements) do
-            if elem.Options and elem.Options.Value ~= nil then
-                savedData[name] = elem.Options.Value
-            end
-        end
-        Library:SendNotification({ Title = "Config Saved", Message = "Saved configuration settings!", Duration = 3 })
+        Library:SaveConfig(options.FileName)
     end)
 
     local cLoad = LoadBtn.MouseButton1Click:Connect(function()
-        if savedData.Title then Library:SetTitle(savedData.Title) end
-        for name, val in pairs(savedData) do
-            if RegisteredElements[name] then RegisteredElements[name]:Set({Value = val}) end
-        end
-        Library:SendNotification({ Title = "Config Loaded", Message = "Loaded saved settings!", Duration = 3 })
+        Library:LoadConfig(options.FileName)
     end)
 
     local Element = {Instance = Frame}
@@ -912,49 +905,7 @@ function Library:AddConfig(options)
     return Element
 end
 
--- 9. AddCreditButton
-function Library:AddCreditButton(options)
-    if #creditButtons >= MAX_CREDIT_BUTTONS then return nil end
-    options = options or {}
-    options.Image = options.Image or options.Value or ""
-    options.Callback = options.Callback or function() end
-
-    local count = #creditButtons + 1
-    options.Name = "CreditBtn_" .. tostring(count)
-
-    local CreditBtn = Instance.new("ImageButton")
-    CreditBtn.Name = options.Name
-    CreditBtn.Size = UDim2.new(0, 24, 0, 24)
-    CreditBtn.Position = UDim2.new(1, -35 - (count * 28), 0, 8)
-    CreditBtn.BackgroundColor3 = Color3.fromRGB(35, 35, 42)
-    CreditBtn.Image = typeof(options.Image) == "number" and ("rbxassetid://" .. tostring(options.Image)) or options.Image
-    CreditBtn.ScaleType = Enum.ScaleType.Fit
-    CreditBtn.Parent = MainFrame
-
-    local Corner = Instance.new("UICorner")
-    Corner.CornerRadius = UDim.new(0, 6)
-    Corner.Parent = CreditBtn
-
-    local conn = CreditBtn.MouseButton1Click:Connect(function() options.Callback() end)
-    table.insert(creditButtons, CreditBtn)
-
-    local Element = {Instance = CreditBtn}
-    function Element:Set(newOptions)
-        newOptions = newOptions or {}
-        if newOptions.Image then options.Image = newOptions.Image; CreditBtn.Image = typeof(options.Image) == "number" and ("rbxassetid://" .. tostring(options.Image)) or options.Image end
-        if newOptions.Callback then options.Callback = newOptions.Callback end
-    end
-    function Element:Delete()
-        conn:Disconnect()
-        local idx = table.find(creditButtons, CreditBtn)
-        if idx then table.remove(creditButtons, idx) end
-        CreditBtn:Destroy()
-        for i, btn in ipairs(creditButtons) do btn.Position = UDim2.new(1, -35 - (i * 28), 0, 8) end
-    end
-    return Element
-end
-
--- 10. SendNotification
+-- 8. SendNotification
 function Library:SendNotification(options)
     options = options or {}
     options.Title = options.Title or options.Name or "Notification"
