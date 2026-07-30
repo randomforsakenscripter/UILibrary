@@ -1,4 +1,4 @@
--- Modern Roblox UI Framework (No Config, Fixed Text Bounds)
+-- Modern Roblox UI Framework (No Config, Fixed Text Constraints)
 local UserInputService = game:GetService("UserInputService")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -9,9 +9,8 @@ if CoreGui:FindFirstChild("GhostGui") then
     CoreGui:FindFirstChild("GhostGui"):Destroy()
 end
 
--- Safe Helper function for Text Scaling
+-- Safe Helper function for Text Scaling using UITextSizeConstraint
 local function ApplyTextScaling(textObject, minSize, maxSize)
-    -- Enforce valid numbers to prevent nil/invalid size errors
     local minVal = math.floor(tonumber(minSize) or 8)
     local maxVal = math.floor(tonumber(maxSize) or 12)
 
@@ -298,7 +297,7 @@ function Library:SetToggleButton(options)
     if options.Position then OpenCloseBtn.Position = options.Position end
 end
 
--- 1. AddTitleEditor
+-- 1. Title Editor
 function Library:AddTitleEditor(options)
     options = options or {}
     options.Name = options.Name or "Menu Title"
@@ -362,7 +361,7 @@ function Library:AddTitleEditor(options)
     return Element
 end
 
--- 2. AddButton
+-- 2. Button
 function Library:AddButton(options)
     options = options or {}
     options.Name = options.Name or "Button"
@@ -402,7 +401,7 @@ function Library:AddButton(options)
     return Element
 end
 
--- 3. AddToggle
+-- 3. Toggle
 function Library:AddToggle(options)
     options = options or {}
     options.Name = options.Name or "Toggle"
@@ -471,7 +470,7 @@ function Library:AddToggle(options)
     return Element
 end
 
--- 4. AddSlider
+-- 4. Slider
 function Library:AddSlider(options)
     options = options or {}
     options.Name = options.Name or "Slider"
@@ -577,7 +576,7 @@ function Library:AddSlider(options)
     return Element
 end
 
--- 5. AddTextbox
+-- 5. Textbox
 function Library:AddTextbox(options)
     options = options or {}
     options.Name = options.Name or "TextBox"
@@ -652,7 +651,7 @@ function Library:AddTextbox(options)
     return Element
 end
 
--- 6. AddDropdown
+-- 6. Dropdown
 function Library:AddDropdown(options)
     options = options or {}
     options.Name = options.Name or "Dropdown"
@@ -775,7 +774,7 @@ function Library:AddDropdown(options)
     return Element
 end
 
--- 7. AddLabelBox
+-- 7. Label Box
 function Library:AddLabelBox(options)
     options = options or {}
     options.Name = options.Name or "Information"
@@ -829,7 +828,7 @@ function Library:AddLabelBox(options)
     return Element
 end
 
--- 8. AddCreditButton
+-- 8. Credit Button
 function Library:AddCreditButton(options)
     if #creditButtons >= MAX_CREDIT_BUTTONS then return nil end
     options = options or {}
@@ -874,7 +873,7 @@ function Library:AddCreditButton(options)
     return Element
 end
 
--- 9. SendNotification
+-- 9. Send Notification
 function Library:SendNotification(options)
     options = options or {}
     options.Title = options.Title or options.Name or "Notification"
